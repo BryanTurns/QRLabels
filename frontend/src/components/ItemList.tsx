@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Item, addItem, updateItem, deleteItem } from "../api";
+import { useRef, useState } from "react";
+import { Item, ItemPhoto, addItem, updateItem, deleteItem, uploadItemPhoto, deleteItemPhoto, getPhotoUrl } from "../api";
+import Lightbox from "./Lightbox";
 
 interface Props {
   containerId: number;
@@ -13,6 +14,7 @@ export default function ItemList({ containerId, items, onChanged }: Props) {
   const [editId, setEditId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [editQty, setEditQty] = useState(1);
+  const [expandedPhotos, setExpandedPhotos] = useState<Set<number>>(new Set());
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +42,13 @@ export default function ItemList({ containerId, items, onChanged }: Props) {
     onChanged();
   };
 
+  const togglePhotos = (id: number) =>
+    setExpandedPhotos((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+
   const rowStyle: React.CSSProperties = {
     display: "flex", alignItems: "center", gap: "0.75rem",
     padding: "0.5rem 0", borderBottom: "1px solid #f0f0f0",
@@ -50,34 +59,50 @@ export default function ItemList({ containerId, items, onChanged }: Props) {
       {items.length === 0 && (
         <p style={{ color: "#888", margin: "0 0 0.75rem" }}>No items yet.</p>
       )}
-      {items.map((item) =>
-        editId === item.id ? (
-          <div key={item.id} style={rowStyle}>
-            <input
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              style={inputStyle}
-              autoFocus
+      {items.map((item) => (
+        <div key={item.id}>
+          {editId === item.id ? (
+            <div style={rowStyle}>
+              <input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                style={inputStyle}
+                autoFocus
+              />
+              <input
+                type="number"
+                min={1}
+                value={editQty}
+                onChange={(e) => setEditQty(Number(e.target.value))}
+                style={{ ...inputStyle, width: 70 }}
+              />
+              <button onClick={() => handleSave(item.id)} style={btnSmallPrimary}>Save</button>
+              <button onClick={() => setEditId(null)} style={btnSmallSecondary}>Cancel</button>
+            </div>
+          ) : (
+            <div style={rowStyle}>
+              <span style={{ flex: 1, fontWeight: 500 }}>{item.name}</span>
+              <span style={{ color: "#555", fontSize: 14 }}>×{item.quantity}</span>
+              <button
+                onClick={() => togglePhotos(item.id)}
+                style={{ ...btnSmallSecondary, color: item.photos.length > 0 ? "#1a1a2e" : "#888" }}
+                title="Toggle photos"
+              >
+                📷{item.photos.length > 0 && ` ${item.photos.length}`}
+              </button>
+              <button onClick={() => startEdit(item)} style={btnSmallSecondary}>Edit</button>
+              <button onClick={() => handleDelete(item.id)} style={btnSmallDanger}>✕</button>
+            </div>
+          )}
+
+          {expandedPhotos.has(item.id) && (
+            <ItemPhotoSection
+              item={item}
+              onChanged={onChanged}
             />
-            <input
-              type="number"
-              min={1}
-              value={editQty}
-              onChange={(e) => setEditQty(Number(e.target.value))}
-              style={{ ...inputStyle, width: 70 }}
-            />
-            <button onClick={() => handleSave(item.id)} style={btnSmallPrimary}>Save</button>
-            <button onClick={() => setEditId(null)} style={btnSmallSecondary}>Cancel</button>
-          </div>
-        ) : (
-          <div key={item.id} style={rowStyle}>
-            <span style={{ flex: 1, fontWeight: 500 }}>{item.name}</span>
-            <span style={{ color: "#555", fontSize: 14 }}>×{item.quantity}</span>
-            <button onClick={() => startEdit(item)} style={btnSmallSecondary}>Edit</button>
-            <button onClick={() => handleDelete(item.id)} style={btnSmallDanger}>✕</button>
-          </div>
-        )
-      )}
+          )}
+        </div>
+      ))}
 
       <form onSubmit={handleAdd} style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem" }}>
         <input
@@ -95,6 +120,63 @@ export default function ItemList({ containerId, items, onChanged }: Props) {
         />
         <button type="submit" disabled={!newName.trim()} style={btnSmallPrimary}>Add</button>
       </form>
+    </div>
+  );
+}
+
+function ItemPhotoSection({ item, onChanged }: { item: Item; onChanged: () => void }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadItemPhoto(item.id, file);
+    if (fileRef.current) fileRef.current.value = "";
+    onChanged();
+  };
+
+  const handleDelete = async (photo: ItemPhoto) => {
+    await deleteItemPhoto(photo.id);
+    onChanged();
+  };
+
+  return (
+    <div style={{ padding: "0.5rem 0 0.75rem 0.25rem", borderBottom: "1px solid #f0f0f0" }}>
+      {lightboxSrc && <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginBottom: item.photos.length ? "0.5rem" : 0 }}>
+        {item.photos.map((photo) => (
+          <div key={photo.id} style={{ position: "relative" }}>
+            <img
+              src={getPhotoUrl(photo.filename)}
+              alt="item photo"
+              onClick={() => setLightboxSrc(getPhotoUrl(photo.filename))}
+              style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 5, display: "block", cursor: "zoom-in" }}
+            />
+            <button
+              onClick={() => handleDelete(photo)}
+              style={{
+                position: "absolute", top: 2, right: 2,
+                background: "rgba(0,0,0,0.6)", color: "#fff",
+                border: "none", borderRadius: "50%", width: 18, height: 18,
+                cursor: "pointer", fontSize: 11, lineHeight: "18px", textAlign: "center",
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+      </div>
+      <label style={{ cursor: "pointer" }}>
+        <span style={{ ...btnSmallSecondary, display: "inline-block" }}>Upload photo</span>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={handleUpload}
+        />
+      </label>
     </div>
   );
 }

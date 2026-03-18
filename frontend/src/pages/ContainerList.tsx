@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   getContainers,
@@ -20,24 +20,36 @@ const card: React.CSSProperties = {
   boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
 };
 
+interface DisplayState {
+  containers: Container[];
+  items: ItemSearchResult[];
+  isSearch: boolean;
+}
+
 export default function ContainerList() {
-  const [containers, setContainers] = useState<Container[]>([]);
+  const allContainersRef = useRef<Container[]>([]);
+  const [displayed, setDisplayed] = useState<DisplayState>({ containers: [], items: [], isSearch: false });
   const [search, setSearch] = useState("");
-  const [searchResults, setSearchResults] = useState<{ containers: Container[]; items: ItemSearchResult[] } | null>(null);
   const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
   const navigate = useNavigate();
 
-  const load = () => getContainers().then(setContainers);
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    getContainers().then((cs) => {
+      allContainersRef.current = cs;
+      setDisplayed({ containers: cs, items: [], isSearch: false });
+    });
+  }, []);
 
   useEffect(() => {
     if (!search.trim()) {
-      setSearchResults(null);
+      setDisplayed({ containers: allContainersRef.current, items: [], isSearch: false });
       return;
     }
     const t = setTimeout(() => {
-      searchAll(search.trim()).then(setSearchResults);
+      searchAll(search.trim()).then((results) =>
+        setDisplayed({ ...results, isSearch: true })
+      );
     }, 250);
     return () => clearTimeout(t);
   }, [search]);
@@ -59,12 +71,13 @@ export default function ContainerList() {
     e.preventDefault();
     if (!confirm("Delete this container and all its items/photos?")) return;
     await deleteContainer(id);
-    load();
+    const cs = await getContainers();
+    allContainersRef.current = cs;
+    setDisplayed({ containers: cs, items: [], isSearch: false });
+    setSearch("");
   };
 
-  const isSearching = search.trim().length > 0;
-  const displayedContainers = isSearching ? (searchResults?.containers ?? []) : containers;
-  const matchedItems: ItemSearchResult[] = isSearching ? (searchResults?.items ?? []) : [];
+  const { containers, items, isSearch } = displayed;
 
   return (
     <div style={{ maxWidth: 700, margin: "2rem auto", padding: "0 1rem" }}>
@@ -92,14 +105,14 @@ export default function ContainerList() {
       />
 
       {/* Containers */}
-      {isSearching && <h3 style={{ margin: "0 0 0.5rem", fontSize: 13, color: "#888", textTransform: "uppercase", letterSpacing: "0.05em" }}>Containers</h3>}
-      {displayedContainers.length === 0 && !isSearching && (
+      {isSearch && <h3 style={{ margin: "0 0 0.5rem", fontSize: 13, color: "#888", textTransform: "uppercase", letterSpacing: "0.05em" }}>Containers</h3>}
+      {containers.length === 0 && !isSearch && (
         <p style={{ color: "#888", textAlign: "center" }}>No containers yet. Create one above.</p>
       )}
-      {displayedContainers.length === 0 && isSearching && (
+      {containers.length === 0 && isSearch && (
         <p style={{ color: "#888", fontSize: 14, marginBottom: "0.5rem" }}>No matching containers.</p>
       )}
-      {displayedContainers.map((c) => (
+      {containers.map((c) => (
         <Link key={c.id} to={`/containers/${c.id}`} style={{ textDecoration: "none", color: "inherit" }}>
           <div style={card}>
             <span style={{ flex: 1, fontWeight: 600, fontSize: 16 }}>{c.name}</span>
@@ -117,13 +130,13 @@ export default function ContainerList() {
       ))}
 
       {/* Item results */}
-      {isSearching && (
+      {isSearch && (
         <>
           <h3 style={{ margin: "1.25rem 0 0.5rem", fontSize: 13, color: "#888", textTransform: "uppercase", letterSpacing: "0.05em" }}>Items</h3>
-          {matchedItems.length === 0 && (
+          {items.length === 0 && (
             <p style={{ color: "#888", fontSize: 14 }}>No matching items.</p>
           )}
-          {matchedItems.map((item) => (
+          {items.map((item) => (
             <Link key={item.id} to={`/containers/${item.container_id}`} style={{ textDecoration: "none", color: "inherit" }}>
               <div style={card}>
                 <div style={{ flex: 1 }}>

@@ -1,5 +1,6 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Photo, uploadPhoto, deletePhoto, getPhotoUrl } from "../api";
+import Lightbox from "./Lightbox";
 
 interface Props {
   containerId: number;
@@ -9,6 +10,7 @@ interface Props {
 
 export default function PhotoGallery({ containerId, photos, onChanged }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -25,13 +27,16 @@ export default function PhotoGallery({ containerId, photos, onChanged }: Props) 
 
   return (
     <div style={{ background: "#fff", borderRadius: 8, padding: "0.75rem 1rem", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+      {lightboxSrc && <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
+
       <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginBottom: photos.length ? "0.75rem" : 0 }}>
         {photos.map((photo) => (
           <div key={photo.id} style={{ position: "relative" }}>
             <img
               src={getPhotoUrl(photo.filename)}
               alt="container photo"
-              style={{ width: 120, height: 120, objectFit: "cover", borderRadius: 6, display: "block" }}
+              onClick={() => setLightboxSrc(getPhotoUrl(photo.filename))}
+              style={{ width: 120, height: 120, objectFit: "cover", borderRadius: 6, display: "block", cursor: "zoom-in" }}
             />
             <button
               onClick={() => handleDelete(photo.id)}

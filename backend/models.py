@@ -35,12 +35,32 @@ class Item(db.Model):
     quantity = db.Column(db.Integer, default=1)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    photos = db.relationship("ItemPhoto", backref="item", cascade="all, delete-orphan")
+
     def to_dict(self):
         return {
             "id": self.id,
             "container_id": self.container_id,
             "name": self.name,
             "quantity": self.quantity,
+            "created_at": self.created_at.isoformat(),
+            "photos": [p.to_dict() for p in self.photos],
+        }
+
+
+class ItemPhoto(db.Model):
+    __tablename__ = "item_photos"
+
+    id = db.Column(db.Integer, primary_key=True)
+    item_id = db.Column(db.Integer, db.ForeignKey("items.id"), nullable=False)
+    filename = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "item_id": self.item_id,
+            "filename": self.filename,
             "created_at": self.created_at.isoformat(),
         }
 

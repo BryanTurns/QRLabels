@@ -11,12 +11,20 @@ export interface Container {
   photos?: Photo[];
 }
 
+export interface ItemPhoto {
+  id: number;
+  item_id: number;
+  filename: string;
+  created_at: string;
+}
+
 export interface Item {
   id: number;
   container_id: number;
   name: string;
   quantity: number;
   created_at: string;
+  photos: ItemPhoto[];
 }
 
 export interface Photo {
@@ -61,3 +69,10 @@ export const uploadPhoto = (container_id: number, file: File) => {
 };
 export const deletePhoto = (id: number) => api.delete(`/photos/${id}`);
 export const getPhotoUrl = (filename: string) => `/api/photos/${filename}`;
+
+export const uploadItemPhoto = (item_id: number, file: File) => {
+  const form = new FormData();
+  form.append("photo", file);
+  return api.post<ItemPhoto>(`/items/${item_id}/photos`, form).then((r) => r.data);
+};
+export const deleteItemPhoto = (id: number) => api.delete(`/item-photos/${id}`);
