@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Html5Qrcode } from "html5-qrcode";
 import { scanContainer } from "../api";
@@ -19,26 +19,36 @@ function extractUuid(decoded: string): string {
 
 export default function Scanner() {
   const navigate = useNavigate();
-  const scannerRef = useRef<Html5Qrcode | null>(null);
   const [error, setError] = useState("");
   const [scanning, setScanning] = useState(false);
 
   useEffect(() => {
     if (isIOS) return;
 
+    let stopped = false;
     const scanner = new Html5Qrcode("qr-reader");
-    scannerRef.current = scanner;
+
+    const stop = () => {
+      if (stopped) return;
+      stopped = true;
+      try {
+        scanner.stop().catch(() => {});
+      } catch {
+        // library throws synchronously when not in a running state
+      }
+    };
 
     scanner
       .start(
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 250, height: 250 } },
         async (decodedText) => {
+          if (stopped) return;
           setScanning(true);
           try {
             const barcode_uuid = extractUuid(decodedText);
             const container = await scanContainer(barcode_uuid);
-            scanner.stop().catch(() => {});
+            stop();
             navigate(`/containers/${container.id}`);
           } catch {
             setError(`No container found for that QR code.`);
@@ -51,9 +61,7 @@ export default function Scanner() {
         setError(`Camera error: ${String(err)}`);
       });
 
-    return () => {
-      scanner.stop().catch(() => {});
-    };
+    return stop;
   }, [navigate]);
 
   if (isIOS) {
