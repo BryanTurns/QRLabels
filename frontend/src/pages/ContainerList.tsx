@@ -115,6 +115,16 @@ export default function ContainerList() {
       {containers.map((c) => (
         <Link key={c.id} to={`/containers/${c.id}`} style={{ textDecoration: "none", color: "inherit" }}>
           <div style={card}>
+            <div style={{
+              width: 56, height: 56, borderRadius: 6, flexShrink: 0,
+              background: "#e5e7eb", overflow: "hidden",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              {c.preview_photo
+                ? <img src={`/api/photos/${c.preview_photo}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : <span style={{ fontSize: 24 }}>📦</span>
+              }
+            </div>
             <span style={{ flex: 1, fontWeight: 600, fontSize: 16 }}>{c.name}</span>
             <span style={{ color: "#888", fontSize: 13 }}>
               {new Date(c.created_at).toLocaleDateString()}

@@ -14,11 +14,13 @@ class Container(db.Model):
     photos = db.relationship("Photo", backref="container", cascade="all, delete-orphan")
 
     def to_dict(self, include_related=False):
+        first_photo = self.photos[0].filename if self.photos else None
         d = {
             "id": self.id,
             "name": self.name,
             "barcode_uuid": self.barcode_uuid,
             "created_at": self.created_at.isoformat(),
+            "preview_photo": first_photo,
         }
         if include_related:
             d["items"] = [i.to_dict() for i in self.items]

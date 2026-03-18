@@ -7,6 +7,7 @@ export interface Container {
   name: string;
   barcode_uuid: string;
   created_at: string;
+  preview_photo: string | null;
   items?: Item[];
   photos?: Photo[];
 }
