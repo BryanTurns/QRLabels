@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getContainers, createContainer, deleteContainer, Container } from "../api";
+import {
+  getContainers,
+  createContainer,
+  deleteContainer,
+  searchAll,
+  Container,
+  ItemSearchResult,
+} from "../api";
 
 const card: React.CSSProperties = {
   background: "#fff",
@@ -16,6 +23,7 @@ const card: React.CSSProperties = {
 export default function ContainerList() {
   const [containers, setContainers] = useState<Container[]>([]);
   const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<{ containers: Container[]; items: ItemSearchResult[] } | null>(null);
   const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
   const navigate = useNavigate();
@@ -23,9 +31,16 @@ export default function ContainerList() {
   const load = () => getContainers().then(setContainers);
   useEffect(() => { load(); }, []);
 
-  const filtered = containers.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    if (!search.trim()) {
+      setSearchResults(null);
+      return;
+    }
+    const t = setTimeout(() => {
+      searchAll(search.trim()).then(setSearchResults);
+    }, 250);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +61,10 @@ export default function ContainerList() {
     await deleteContainer(id);
     load();
   };
+
+  const isSearching = search.trim().length > 0;
+  const displayedContainers = isSearching ? (searchResults?.containers ?? []) : containers;
+  const matchedItems: ItemSearchResult[] = isSearching ? (searchResults?.items ?? []) : [];
 
   return (
     <div style={{ maxWidth: 700, margin: "2rem auto", padding: "0 1rem" }}>
@@ -68,15 +87,19 @@ export default function ContainerList() {
       <input
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search containers…"
+        placeholder="Search containers and items…"
         style={{ width: "100%", padding: "0.5rem 0.75rem", borderRadius: 6, border: "1px solid #ccc", fontSize: 15, marginBottom: "1rem" }}
       />
 
-      {filtered.length === 0 && (
+      {/* Containers */}
+      {isSearching && <h3 style={{ margin: "0 0 0.5rem", fontSize: 13, color: "#888", textTransform: "uppercase", letterSpacing: "0.05em" }}>Containers</h3>}
+      {displayedContainers.length === 0 && !isSearching && (
         <p style={{ color: "#888", textAlign: "center" }}>No containers yet. Create one above.</p>
       )}
-
-      {filtered.map((c) => (
+      {displayedContainers.length === 0 && isSearching && (
+        <p style={{ color: "#888", fontSize: 14, marginBottom: "0.5rem" }}>No matching containers.</p>
+      )}
+      {displayedContainers.map((c) => (
         <Link key={c.id} to={`/containers/${c.id}`} style={{ textDecoration: "none", color: "inherit" }}>
           <div style={card}>
             <span style={{ flex: 1, fontWeight: 600, fontSize: 16 }}>{c.name}</span>
@@ -92,6 +115,27 @@ export default function ContainerList() {
           </div>
         </Link>
       ))}
+
+      {/* Item results */}
+      {isSearching && (
+        <>
+          <h3 style={{ margin: "1.25rem 0 0.5rem", fontSize: 13, color: "#888", textTransform: "uppercase", letterSpacing: "0.05em" }}>Items</h3>
+          {matchedItems.length === 0 && (
+            <p style={{ color: "#888", fontSize: 14 }}>No matching items.</p>
+          )}
+          {matchedItems.map((item) => (
+            <Link key={item.id} to={`/containers/${item.container_id}`} style={{ textDecoration: "none", color: "inherit" }}>
+              <div style={card}>
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontWeight: 600, fontSize: 16 }}>{item.name}</span>
+                  <span style={{ color: "#888", fontSize: 13, marginLeft: "0.5rem" }}>×{item.quantity}</span>
+                </div>
+                <span style={{ color: "#555", fontSize: 13 }}>in {item.container_name}</span>
+              </div>
+            </Link>
+          ))}
+        </>
+      )}
     </div>
   );
 }

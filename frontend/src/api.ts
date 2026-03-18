@@ -27,6 +27,16 @@ export interface Photo {
 }
 
 export const getContainers = () => api.get<Container[]>("/containers").then((r) => r.data);
+
+export interface ItemSearchResult extends Item {
+  container_name: string;
+}
+export interface SearchResults {
+  containers: Container[];
+  items: ItemSearchResult[];
+}
+export const searchAll = (q: string) =>
+  api.get<SearchResults>("/search", { params: { q } }).then((r) => r.data);
 export const createContainer = (name: string) =>
   api.post<Container>("/containers", { name }).then((r) => r.data);
 export const getContainer = (id: number) =>
