@@ -1,6 +1,38 @@
 import axios from "axios";
 
 const api = axios.create({ baseURL: "/api" });
+export default api;
+
+// Attach token from localStorage to every request
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// 401 responses clear the token and redirect to login,
+// but not for auth endpoints (login/register handle their own errors)
+api.interceptors.response.use(
+  (r) => r,
+  (err) => {
+    const isAuthRoute = err.config?.url?.startsWith("/auth/");
+    if (err.response?.status === 401 && !isAuthRoute) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("username");
+      window.location.href = "/login";
+    }
+    return Promise.reject(err);
+  }
+);
+
+export interface AuthResponse {
+  token: string;
+  username: string;
+}
+export const loginUser = (username: string, password: string) =>
+  api.post<AuthResponse>("/auth/login", { username, password }).then((r) => r.data);
+export const registerUser = (username: string, password: string) =>
+  api.post("/auth/register", { username, password }).then((r) => r.data);
 
 export interface Container {
   id: number;
@@ -55,7 +87,7 @@ export const updateContainer = (id: number, name: string) =>
 export const deleteContainer = (id: number) => api.delete(`/containers/${id}`);
 export const scanContainer = (uuid: string) =>
   api.get<Container>(`/containers/scan/${uuid}`).then((r) => r.data);
-export const getBarcodeUrl = (id: number) => `/api/containers/${id}/barcode`;
+export const getBarcodeUrl = (id: number) => `/containers/${id}/barcode`;
 
 export const addItem = (container_id: number, name: string, quantity: number) =>
   api.post<Item>(`/containers/${container_id}/items`, { name, quantity }).then((r) => r.data);
@@ -69,7 +101,7 @@ export const uploadPhoto = (container_id: number, file: File) => {
   return api.post<Photo>(`/containers/${container_id}/photos`, form).then((r) => r.data);
 };
 export const deletePhoto = (id: number) => api.delete(`/photos/${id}`);
-export const getPhotoUrl = (filename: string) => `/api/photos/${filename}`;
+export const getPhotoUrl = (filename: string) => `/photos/${filename}`;
 
 export const uploadItemPhoto = (item_id: number, file: File) => {
   const form = new FormData();

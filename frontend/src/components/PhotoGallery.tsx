@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Photo, uploadPhoto, deletePhoto, getPhotoUrl } from "../api";
+import AuthImg from "./AuthImg";
 import Lightbox from "./Lightbox";
 
 interface Props {
@@ -32,7 +33,7 @@ export default function PhotoGallery({ containerId, photos, onChanged }: Props) 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginBottom: photos.length ? "0.75rem" : 0 }}>
         {photos.map((photo) => (
           <div key={photo.id} style={{ position: "relative" }}>
-            <img
+            <AuthImg
               src={getPhotoUrl(photo.filename)}
               alt="container photo"
               onClick={() => setLightboxSrc(getPhotoUrl(photo.filename))}

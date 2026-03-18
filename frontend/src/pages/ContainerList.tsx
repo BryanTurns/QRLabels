@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import AuthImg from "../components/AuthImg";
 import { Link, useNavigate } from "react-router-dom";
 import {
   getContainers,
@@ -121,7 +122,7 @@ export default function ContainerList() {
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
               {c.preview_photo
-                ? <img src={`/api/photos/${c.preview_photo}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ? <AuthImg src={`/photos/${c.preview_photo}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 : <span style={{ fontSize: 24 }}>📦</span>
               }
             </div>
@@ -172,7 +173,7 @@ function ItemThumb({ photo }: { photo: string | null }) {
       display: "flex", alignItems: "center", justifyContent: "center",
     }}>
       {photo
-        ? <img src={`/api/photos/${photo}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ? <AuthImg src={`/photos/${photo}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         : <span style={{ fontSize: 24 }}>🏷️</span>
       }
     </div>

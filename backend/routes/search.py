@@ -1,10 +1,12 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, g
+from auth_utils import require_auth
 from models import Container, Item
 
 search_bp = Blueprint("search", __name__)
 
 
 @search_bp.get("/api/search")
+@require_auth
 def search():
     q = (request.args.get("q") or "").strip()
     if not q:
@@ -12,12 +14,16 @@ def search():
 
     pattern = f"%{q}%"
 
-    containers = Container.query.filter(Container.name.ilike(pattern)).order_by(Container.name).all()
+    containers = (
+        Container.query
+        .filter(Container.user_id == g.user_id, Container.name.ilike(pattern))
+        .order_by(Container.name)
+        .all()
+    )
 
     items = (
-        Item.query
-        .join(Item.container)
-        .filter(Item.name.ilike(pattern))
+        Item.query.join(Item.container)
+        .filter(Container.user_id == g.user_id, Item.name.ilike(pattern))
         .order_by(Item.name)
         .all()
     )

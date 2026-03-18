@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import AuthImg from "./AuthImg";
 
 interface Props {
   src: string;
@@ -22,7 +23,7 @@ export default function Lightbox({ src, onClose }: Props) {
         cursor: "zoom-out",
       }}
     >
-      <img
+      <AuthImg
         src={src}
         onClick={(e) => e.stopPropagation()}
         style={{ maxWidth: "90vw", maxHeight: "90vh", borderRadius: 6, objectFit: "contain", cursor: "default" }}

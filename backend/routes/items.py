@@ -1,13 +1,15 @@
-from flask import Blueprint, jsonify, request, abort
+from flask import Blueprint, jsonify, request, abort, g
 from app import db
+from auth_utils import require_auth
 from models import Container, Item
 
 items_bp = Blueprint("items", __name__)
 
 
 @items_bp.post("/api/containers/<int:container_id>/items")
+@require_auth
 def add_item(container_id):
-    Container.query.get_or_404(container_id)
+    Container.query.filter_by(id=container_id, user_id=g.user_id).first_or_404()  # raises 404 if container doesn't exist or doesn't belong to user
     data = request.get_json(force=True)
     name = (data.get("name") or "").strip()
     if not name:
@@ -20,8 +22,13 @@ def add_item(container_id):
 
 
 @items_bp.put("/api/items/<int:item_id>")
+@require_auth
 def update_item(item_id):
-    item = Item.query.get_or_404(item_id)
+    item = (
+        Item.query.join(Item.container)
+        .filter(Item.id == item_id, Container.user_id == g.user_id)
+        .first_or_404()
+    )
     data = request.get_json(force=True)
     if "name" in data:
         name = (data["name"] or "").strip()
@@ -35,8 +42,13 @@ def update_item(item_id):
 
 
 @items_bp.delete("/api/items/<int:item_id>")
+@require_auth
 def delete_item(item_id):
-    item = Item.query.get_or_404(item_id)
+    item = (
+        Item.query.join(Item.container)
+        .filter(Item.id == item_id, Container.user_id == g.user_id)
+        .first_or_404()
+    )
     db.session.delete(item)
     db.session.commit()
     return "", 204

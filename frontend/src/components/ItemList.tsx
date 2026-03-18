@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Item, ItemPhoto, addItem, updateItem, deleteItem, uploadItemPhoto, deleteItemPhoto, getPhotoUrl } from "../api";
+import AuthImg from "./AuthImg";
 import Lightbox from "./Lightbox";
 
 interface Props {
@@ -87,7 +88,7 @@ export default function ItemList({ containerId, items, onChanged }: Props) {
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
                 {item.photos[0]
-                  ? <img src={getPhotoUrl(item.photos[0].filename)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ? <AuthImg src={getPhotoUrl(item.photos[0].filename)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   : <span style={{ fontSize: 18 }}>🏷️</span>
                 }
               </div>
@@ -157,7 +158,7 @@ function ItemPhotoSection({ item, onChanged }: { item: Item; onChanged: () => vo
       <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginBottom: item.photos.length ? "0.5rem" : 0 }}>
         {item.photos.map((photo) => (
           <div key={photo.id} style={{ position: "relative" }}>
-            <img
+            <AuthImg
               src={getPhotoUrl(photo.filename)}
               alt="item photo"
               onClick={() => setLightboxSrc(getPhotoUrl(photo.filename))}

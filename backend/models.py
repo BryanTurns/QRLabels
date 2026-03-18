@@ -2,10 +2,22 @@ from datetime import datetime
 from app import db
 
 
+class User(db.Model):
+    __tablename__ = "users"
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.Text, unique=True, nullable=False)
+    password_hash = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    containers = db.relationship("Container", backref="owner", cascade="all, delete-orphan")
+
+
 class Container(db.Model):
     __tablename__ = "containers"
 
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     name = db.Column(db.Text, nullable=False)
     barcode_uuid = db.Column(db.Text, unique=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
