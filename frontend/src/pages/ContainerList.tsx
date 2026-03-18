@@ -149,6 +149,7 @@ export default function ContainerList() {
           {items.map((item) => (
             <Link key={item.id} to={`/containers/${item.container_id}`} style={{ textDecoration: "none", color: "inherit" }}>
               <div style={card}>
+                <ItemThumb photo={item.photos[0]?.filename ?? null} />
                 <div style={{ flex: 1 }}>
                   <span style={{ fontWeight: 600, fontSize: 16 }}>{item.name}</span>
                   <span style={{ color: "#888", fontSize: 13, marginLeft: "0.5rem" }}>×{item.quantity}</span>
@@ -159,6 +160,21 @@ export default function ContainerList() {
           ))}
         </>
       )}
+    </div>
+  );
+}
+
+function ItemThumb({ photo }: { photo: string | null }) {
+  return (
+    <div style={{
+      width: 56, height: 56, borderRadius: 6, flexShrink: 0,
+      background: "#e5e7eb", overflow: "hidden",
+      display: "flex", alignItems: "center", justifyContent: "center",
+    }}>
+      {photo
+        ? <img src={`/api/photos/${photo}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        : <span style={{ fontSize: 24 }}>🏷️</span>
+      }
     </div>
   );
 }

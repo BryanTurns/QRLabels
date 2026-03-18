@@ -81,6 +81,16 @@ export default function ItemList({ containerId, items, onChanged }: Props) {
             </div>
           ) : (
             <div style={rowStyle}>
+              <div style={{
+                width: 40, height: 40, borderRadius: 5, flexShrink: 0,
+                background: "#e5e7eb", overflow: "hidden",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                {item.photos[0]
+                  ? <img src={getPhotoUrl(item.photos[0].filename)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  : <span style={{ fontSize: 18 }}>🏷️</span>
+                }
+              </div>
               <span style={{ flex: 1, fontWeight: 500 }}>{item.name}</span>
               <span style={{ color: "#555", fontSize: 14 }}>×{item.quantity}</span>
               <button
