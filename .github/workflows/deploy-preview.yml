@@ -1,0 +1,74 @@
+name: Deploy Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
+          tags: tag:ci
+
+      - name: Deploy preview
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            BRANCH_NAME="${{ github.head_ref }}"
+            SLUG=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]' | cut -c1-40)
+            OFFSET=$(( $(printf '%s' "$SLUG" | cksum | awk '{print $1}') % 900 ))
+            WEB_PORT=$(( 3100 + OFFSET ))
+            API_PORT=$(( 5100 + OFFSET ))
+            PREVIEW_DIR="${{ secrets.DEPLOY_PATH }}/previews/$SLUG"
+
+            # Get branch code via git worktree
+            cd ${{ secrets.DEPLOY_PATH }}
+            git fetch origin
+            if [ -d "$PREVIEW_DIR" ]; then
+              git -C "$PREVIEW_DIR" reset --hard "origin/$BRANCH_NAME"
+            else
+              git worktree add "$PREVIEW_DIR" "origin/$BRANCH_NAME"
+            fi
+
+            # Build and start preview stack
+            cd "$PREVIEW_DIR"
+            WEB_PORT=$WEB_PORT \
+            API_PORT=$API_PORT \
+            APP_BASE_PATH="/barcode-db/dev/$SLUG" \
+            VITE_BASE_PATH="/barcode-db/dev/$SLUG/" \
+            docker compose -p "barcode-$SLUG" up --build -d
+
+            # Write nginx config snippet
+            cat > /etc/nginx/conf.d/preview-$SLUG.conf << EOF
+            location /barcode-db/dev/$SLUG/ {
+                proxy_pass http://localhost:$WEB_PORT/;
+                proxy_set_header Host \$host;
+                proxy_set_header X-Real-IP \$remote_addr;
+                proxy_set_header X-Forwarded-Proto \$http_x_forwarded_proto;
+            }
+            EOF
+            nginx -s reload
+
+      - name: Comment preview URL on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const slug = '${{ github.head_ref }}'.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase().slice(0, 40)
+            const hostname = '${{ secrets.TAILSCALE_HOSTNAME }}'
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `Preview deployed: https://${hostname}.ts.net/barcode-db/dev/${slug}/`
+            })
