@@ -22,6 +22,7 @@ jobs:
         run: |
           echo "${{ secrets.DEPLOY_SSH_KEY }}" | base64 -d > /tmp/deploy_key
           chmod 600 /tmp/deploy_key
+          ssh-keygen -l -f /tmp/deploy_key
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
