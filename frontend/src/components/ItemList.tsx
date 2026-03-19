@@ -184,6 +184,7 @@ function ItemPhotoSection({ item, onChanged }: { item: Item; onChanged: () => vo
           ref={fileRef}
           type="file"
           accept="image/*"
+          capture="environment"
           style={{ display: "none" }}
           onChange={handleUpload}
         />
