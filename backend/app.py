@@ -3,6 +3,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from sqlalchemy import text, inspect as sa_inspect
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 db = SQLAlchemy()
 
@@ -39,6 +40,8 @@ def create_app(test_config: dict | None = None):
     with app.app_context():
         db.create_all()
         _migrate(db)
+
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
     return app
 
