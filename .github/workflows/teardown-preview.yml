@@ -34,5 +34,5 @@ jobs:
             git worktree remove "$PREVIEW_DIR" --force
 
             # Remove nginx config and reload
-            rm -f /etc/nginx/conf.d/preview-$SLUG.conf
-            nginx -s reload
+            rm -f /docker-apps/nginx/config/preview-$SLUG.conf
+            docker compose -f /docker-apps/nginx/docker-compose.yml exec nginx nginx -s reload
