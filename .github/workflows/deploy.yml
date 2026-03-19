@@ -18,12 +18,17 @@ jobs:
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
           tags: tag:ci
 
+      - name: Write SSH key
+        run: |
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" | base64 -d > /tmp/deploy_key
+          chmod 600 /tmp/deploy_key
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          key_path: /tmp/deploy_key
           script: |
             cd ${{ secrets.DEPLOY_PATH }}
             git pull
