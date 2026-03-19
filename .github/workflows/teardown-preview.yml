@@ -1,0 +1,38 @@
+name: Teardown Preview
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  teardown:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
+          tags: tag:ci
+
+      - name: Teardown preview
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            SLUG=$(echo "${{ github.head_ref }}" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]' | cut -c1-40)
+            PREVIEW_DIR="${{ secrets.DEPLOY_PATH }}/previews/$SLUG"
+
+            # Stop and remove containers + volume
+            cd "$PREVIEW_DIR"
+            docker compose -p "barcode-$SLUG" down -v
+
+            # Remove worktree
+            cd ${{ secrets.DEPLOY_PATH }}
+            git worktree remove "$PREVIEW_DIR" --force
+
+            # Remove nginx config and reload
+            rm -f /docker-apps/nginx/config/preview-$SLUG.conf
+            docker compose -f /docker-apps/nginx/docker-compose.yml exec nginx nginx -s reload
