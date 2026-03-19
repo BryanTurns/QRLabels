@@ -63,6 +63,7 @@ export default function PhotoGallery({ containerId, photos, onChanged }: Props) 
           ref={fileRef}
           type="file"
           accept="image/*"
+          capture="environment"
           style={{ display: "none" }}
           onChange={handleUpload}
         />

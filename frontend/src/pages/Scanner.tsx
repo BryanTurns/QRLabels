@@ -3,8 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Html5Qrcode } from "html5-qrcode";
 import { scanContainer } from "../api";
 
-const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-
 function extractUuid(decoded: string): string {
   // QR codes encode a full URL like http://host/scan/<uuid>
   // Fall back to treating the whole string as a UUID for older codes
@@ -23,7 +21,10 @@ export default function Scanner() {
   const [scanning, setScanning] = useState(false);
 
   useEffect(() => {
-    if (isIOS) return;
+    if (!window.isSecureContext) {
+      setError("Camera requires a secure connection. Access the app via https:// or http://localhost.");
+      return;
+    }
 
     let stopped = false;
     const scanner = new Html5Qrcode("qr-reader");
@@ -63,22 +64,6 @@ export default function Scanner() {
 
     return stop;
   }, [navigate]);
-
-  if (isIOS) {
-    return (
-      <div style={{ maxWidth: 480, margin: "3rem auto", padding: "0 1.5rem", textAlign: "center" }}>
-        <h2 style={{ marginBottom: "1rem" }}>Scan QR Code</h2>
-        <div style={{ background: "#fff", borderRadius: 12, padding: "1.5rem", boxShadow: "0 1px 4px rgba(0,0,0,0.12)" }}>
-          <p style={{ fontSize: 48, margin: "0 0 0.5rem" }}>📷</p>
-          <p style={{ fontWeight: 600, marginBottom: "0.5rem" }}>Use your iPhone Camera app</p>
-          <p style={{ color: "#555", fontSize: 14, lineHeight: 1.5 }}>
-            Open the built-in <strong>Camera</strong> app and point it at a container QR code.
-            It will show a notification — tap it to open the container.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div style={{ maxWidth: 480, margin: "2rem auto", padding: "0 1rem", textAlign: "center" }}>
