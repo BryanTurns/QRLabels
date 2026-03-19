@@ -41,11 +41,16 @@ jobs:
               git worktree add "$PREVIEW_DIR" "origin/$BRANCH_NAME"
             fi
 
+            # Write .env so Docker Compose picks up the correct values
+            cat > "$PREVIEW_DIR/.env" << EOF
+            WEB_PORT=$WEB_PORT
+            API_PORT=$API_PORT
+            APP_BASE_PATH=/barcode-db/dev/$SLUG
+            VITE_BASE_PATH=/barcode-db/dev/$SLUG/
+            EOF
+
             # Build and start preview stack
             cd "$PREVIEW_DIR"
-            export WEB_PORT API_PORT
-            export APP_BASE_PATH="/barcode-db/dev/$SLUG"
-            export VITE_BASE_PATH="/barcode-db/dev/$SLUG/"
             docker compose -p "barcode-$SLUG" build --no-cache
             docker compose -p "barcode-$SLUG" up -d
 
