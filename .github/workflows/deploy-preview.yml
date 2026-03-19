@@ -41,13 +41,16 @@ jobs:
               git worktree add "$PREVIEW_DIR" "origin/$BRANCH_NAME"
             fi
 
+            # Write env file for Docker Compose variable substitution
+            ENV_FILE="/tmp/preview-$SLUG.env"
+            printf 'VITE_BASE_PATH=%s\nWEB_PORT=%s\nAPI_PORT=%s\nAPP_BASE_PATH=%s\n' \
+              "/barcode-db/dev/$SLUG/" "$WEB_PORT" "$API_PORT" "/barcode-db/dev/$SLUG" \
+              > "$ENV_FILE"
+
             # Build and start preview stack
             cd "$PREVIEW_DIR"
-            docker compose -p "barcode-$SLUG" build --no-cache \
-              --build-arg "VITE_BASE_PATH=/barcode-db/dev/$SLUG/"
-            WEB_PORT=$WEB_PORT API_PORT=$API_PORT \
-              APP_BASE_PATH="/barcode-db/dev/$SLUG" \
-              docker compose -p "barcode-$SLUG" up -d
+            docker compose -p "barcode-$SLUG" --env-file "$ENV_FILE" build --no-cache
+            docker compose -p "barcode-$SLUG" --env-file "$ENV_FILE" up -d
 
             # Write nginx config snippet
             cat > /docker-apps/nginx/config/preview-$SLUG.conf << EOF
