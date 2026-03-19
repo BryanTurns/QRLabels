@@ -19,8 +19,10 @@ jobs:
           tags: tag:ci
 
       - name: Write SSH key
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
         run: |
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" | base64 -d > /tmp/deploy_key
+          echo "$SSH_KEY" > /tmp/deploy_key
           chmod 600 /tmp/deploy_key
           ssh-keygen -l -f /tmp/deploy_key
 
