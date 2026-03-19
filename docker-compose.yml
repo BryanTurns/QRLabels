@@ -11,7 +11,10 @@ services:
     restart: unless-stopped
 
   web:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        - VITE_BASE_PATH=${VITE_BASE_PATH:-/}
     ports:
       - "3000:3000"
     depends_on:
