@@ -26,4 +26,4 @@ jobs:
           script: |
             cd ${{ secrets.DEPLOY_PATH }}
             git pull
-            docker compose up --build -d
+            VITE_BASE_PATH=/barcode-db/ docker compose up --build -d
