@@ -9,6 +9,8 @@ from models import Container
 
 containers_bp = Blueprint("containers", __name__)
 
+BASE_PATH = os.environ.get("APP_BASE_PATH", "")
+
 
 def _qr_response(url: str):
     img = qrcode.make(url)
@@ -89,5 +91,5 @@ def delete_container(container_id):
 def get_barcode(container_id):
     container = Container.query.filter_by(id=container_id, user_id=g.user_id).first_or_404()
     base = request.host_url.rstrip("/")
-    scan_url = f"{base}/scan/{container.barcode_uuid}"
+    scan_url = f"{base}{BASE_PATH}/scan/{container.barcode_uuid}"
     return _qr_response(scan_url)
