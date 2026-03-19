@@ -43,11 +43,11 @@ jobs:
 
             # Build and start preview stack
             cd "$PREVIEW_DIR"
-            WEB_PORT=$WEB_PORT \
-            API_PORT=$API_PORT \
-            APP_BASE_PATH="/barcode-db/dev/$SLUG" \
-            VITE_BASE_PATH="/barcode-db/dev/$SLUG/" \
-            docker compose -p "barcode-$SLUG" up --build -d
+            export WEB_PORT API_PORT
+            export APP_BASE_PATH="/barcode-db/dev/$SLUG"
+            export VITE_BASE_PATH="/barcode-db/dev/$SLUG/"
+            docker compose -p "barcode-$SLUG" build --no-cache
+            docker compose -p "barcode-$SLUG" up -d
 
             # Write nginx config snippet
             cat > /docker-apps/nginx/config/preview-$SLUG.conf << EOF
